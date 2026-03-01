@@ -1,0 +1,13 @@
+# Build artifacts
+build/
+
+# Editor / OS files
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Agent context (not part of the project)
+.agent/
