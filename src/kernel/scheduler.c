@@ -25,13 +25,28 @@ void scheduler_add_task(TCB *tcb)
 }
 void scheduler_yield(void)
 {
-    // Round Robin
-    next_task = task_list[(current_task_index + 1) % task_count];
-    current_task_index++;
-
-    // Trigger PendSV exception
-    ICSR = PENDSVSET;
+    // Round Robin: find next awake task
+    uint32_t next_index = current_task_index;
+    for (uint32_t i = 0; i < task_count; i++)
+    {
+        next_index = (next_index + 1) % task_count;
+        if (task_list[next_index]->sleep_count == 0)
+        {
+            next_task = task_list[next_index];
+            current_task_index = next_index;
+            ICSR = PENDSVSET;
+            return;
+        }
+    }
+    // All tasks sleeping: stay on current task
 }
+
+void task_sleep(uint32_t ticks)
+{
+    current_task->sleep_count = ticks;
+    scheduler_yield();
+}
+
 void scheduler_start(void)
 {
     current_task = task_list[0];
@@ -53,7 +68,25 @@ void scheduler_start(void)
 /* SysTick */
 void SysTick_Handler(void)
 {
-    next_task = task_list[(current_task_index + 1) % task_count];
-    current_task_index = (current_task_index + 1) % task_count;
-    ICSR = PENDSVSET;
+    // Decrement sleep counters for all sleeping tasks
+    for (uint32_t i = 0; i < task_count; i++)
+    {
+        if (task_list[i]->sleep_count > 0)
+            task_list[i]->sleep_count--;
+    }
+
+    // Find next awake task
+    uint32_t next_index = current_task_index;
+    for (uint32_t i = 0; i < task_count; i++)
+    {
+        next_index = (next_index + 1) % task_count;
+        if (task_list[next_index]->sleep_count == 0)
+        {
+            next_task = task_list[next_index];
+            current_task_index = next_index;
+            ICSR = PENDSVSET;
+            return;
+        }
+    }
+    // All tasks sleeping: no context switch
 }

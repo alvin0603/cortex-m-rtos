@@ -13,7 +13,7 @@ void task1(void)
     while(1)
     {
         uart_puts("Task 1 is running\n");
-        // scheduler_yield();
+        task_sleep(100); // sleep 1 second (100 ticks * 10ms)
     }
 }
 void task2(void)
@@ -21,7 +21,7 @@ void task2(void)
     while(1)
     {
         uart_puts("Task 2 is running\n");
-        // scheduler_yield();
+        task_sleep(50); // sleep 0.5 second (50 ticks * 10ms)
     }
 }
 

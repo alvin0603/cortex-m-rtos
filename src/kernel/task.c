@@ -13,5 +13,6 @@ void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack)
     *(--sp) = 0x00000000; // R0
     for(int i = 0; i < 8; i++)
         *(--sp) = 0x00000000; // R4-R11
-    tcb->stack_pointer = sp;    
+    tcb->stack_pointer = sp;
+    tcb->sleep_count = 0;
 }
