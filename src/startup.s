@@ -22,7 +22,7 @@ vector_table:
     .word Default_Handler       @ 0x30: Debug Monitor
     .word 0                     @ 0x34: Reserved
     .word PendSV_Handler        @ 0x38: PendSV (context switching)
-    .word Default_Handler       @ 0x3C: SysTick (system timer)
+    .word SysTick_Handler       @ 0x3C: SysTick (system timer)
 
     .section .text
     .align 2

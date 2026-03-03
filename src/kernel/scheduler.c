@@ -12,6 +12,7 @@ TCB *task_list[MAX_TASKS];
 uint32_t task_count = 0;   
 uint32_t current_task_index = 0;
 
+/* Scheduler API */
 void scheduler_init(void)
 {
     task_count = 0;
@@ -47,5 +48,12 @@ void scheduler_start(void)
         : "r" (&current_task->stack_pointer) 
         : "r0", "memory"
     );
-    
-}   
+}
+
+/* SysTick */
+void SysTick_Handler(void)
+{
+    next_task = task_list[(current_task_index + 1) % task_count];
+    current_task_index = (current_task_index + 1) % task_count;
+    ICSR = PENDSVSET;
+}
