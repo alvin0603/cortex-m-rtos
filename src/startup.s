@@ -21,7 +21,7 @@ vector_table:
     .word Default_Handler       @ 0x2C: SVCall
     .word Default_Handler       @ 0x30: Debug Monitor
     .word 0                     @ 0x34: Reserved
-    .word Default_Handler       @ 0x38: PendSV (context switching)
+    .word PendSV_Handler        @ 0x38: PendSV (context switching)
     .word Default_Handler       @ 0x3C: SysTick (system timer)
 
     .section .text
@@ -57,7 +57,32 @@ Reset_Handler:
 @ Jump to C
 .call_main:
     bl  main
-    b   .                       @ infinite loop if main returns
+    b   .                       @ infinite loop if main return
+
+    .globl PendSV_Handler
+    .type PendSV_Handler, %function
+PendSV_Handler:
+    @ Save old task's R4-R11
+    mrs r0, psp                 @ r0 = current PSP (old task's stack top)
+    stmfd r0!, {r4-r11}         @ push R4-R11 onto old task's stack
+
+    @ Save updated SP back to old task's TCB
+    ldr r1, =current_task       @ r1 = &current_task
+    ldr r2, [r1]                @ r2 = current_task (pointer to old TCB)
+    str r0, [r2]                @ current_task->stack_pointer = r0
+
+    @ Switch to new task
+    ldr r3, =next_task          @ r3 = &next_task
+    ldr r0, [r3]                @ r0 = next_task (pointer to new TCB)
+    str r0, [r1]                @ current_task = next_task
+
+    @ Restore new task's R4-R11
+    ldr r0, [r0]                @ r0 = next_task->stack_pointer
+    ldmfd r0!, {r4-r11}         @ pop R4-R11 from new task's stack
+
+    @ Update PSP and return
+    msr psp, r0                 @ PSP = new task's stack pointer
+    bx lr                       @ return (hardware automatically restores R0-R3, R12, LR, PC, xPSR)
 
     .globl Default_Handler
     .type Default_Handler, %function

@@ -9,7 +9,7 @@
 void uart_init(void)
 {
     // For the future setting to real hardware (STM32)
-}
+}   
 
 void uart_putc(char c)
 {
