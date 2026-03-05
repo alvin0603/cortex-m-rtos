@@ -90,3 +90,17 @@ void SysTick_Handler(void)
     }
     // All tasks sleeping: no context switch
 }
+
+/* Critical Section */
+void critical_enter(void)
+{
+    __asm volatile(
+        "cpsid i"    
+    ); // Disable interrupt
+}
+void critical_exit(void)
+{
+    __asm volatile(
+        "cpsie i"
+    ); // Enable interrupt
+}
