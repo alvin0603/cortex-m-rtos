@@ -1,5 +1,5 @@
 #include "kernel/task.h"    
-void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack)
+void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_t priority)
 {
     // ARM stack use Full Descending
     uint32_t *sp = stack + TASK_STACK_SIZE;
@@ -15,4 +15,5 @@ void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack)
         *(--sp) = 0x00000000; // R4-R11
     tcb->stack_pointer = sp;
     tcb->sleep_count = 0;
+    tcb->priority = priority;
 }

@@ -44,8 +44,8 @@ int main(void)
     uart_init();
 
     scheduler_init();
-    task_create(&tcb1, task1, task_1_stack);
-    task_create(&tcb2, task2, task_2_stack);
+    task_create(&tcb1, task1, task_1_stack, 0);
+    task_create(&tcb2, task2, task_2_stack, 1);
     scheduler_add_task(&tcb1);
     scheduler_add_task(&tcb2);
     systick_init(120000);

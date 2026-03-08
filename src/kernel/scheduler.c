@@ -23,22 +23,33 @@ void scheduler_add_task(TCB *tcb)
     task_list[task_count] = tcb;
     task_count++;
 }
-void scheduler_yield(void)
+static void scheduler_select_next_task(void)
 {
-    // Round Robin: find next awake task
-    uint32_t next_index = current_task_index;
+    uint32_t highest_priority = 1e9;
+    uint32_t next_index = current_task_index; // Self in default
+    int found = 0;
+    uint32_t search_index = current_task_index;
     for (uint32_t i = 0; i < task_count; i++)
     {
-        next_index = (next_index + 1) % task_count;
-        if (task_list[next_index]->sleep_count == 0)
+        search_index = (search_index + 1) % task_count; 
+        if (task_list[search_index]->sleep_count == 0 && 
+            task_list[search_index]->priority < highest_priority)
         {
-            next_task = task_list[next_index];
-            current_task_index = next_index;
-            ICSR = PENDSVSET;
-            return;
+            highest_priority = task_list[search_index]->priority;
+            next_index = search_index;
+            found = 1;
         }
     }
-    // All tasks sleeping: stay on current task
+    if (found) 
+    {
+        next_task = task_list[next_index];
+        current_task_index = next_index;
+        ICSR = PENDSVSET;
+    }
+}
+void scheduler_yield(void)
+{
+    scheduler_select_next_task();
 }
 
 void task_sleep(uint32_t ticks)
@@ -74,21 +85,8 @@ void SysTick_Handler(void)
         if (task_list[i]->sleep_count > 0)
             task_list[i]->sleep_count--;
     }
-
-    // Find next awake task
-    uint32_t next_index = current_task_index;
-    for (uint32_t i = 0; i < task_count; i++)
-    {
-        next_index = (next_index + 1) % task_count;
-        if (task_list[next_index]->sleep_count == 0)
-        {
-            next_task = task_list[next_index];
-            current_task_index = next_index;
-            ICSR = PENDSVSET;
-            return;
-        }
-    }
-    // All tasks sleeping: no context switch
+    
+    scheduler_select_next_task();
 }
 
 /* Critical Section */
