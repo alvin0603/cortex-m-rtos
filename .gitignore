@@ -12,3 +12,6 @@ Thumbs.db
 # Agent context (not part of the project)
 .agent/
 .clangd
+
+# Docs
+docs/
