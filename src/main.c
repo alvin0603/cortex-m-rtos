@@ -4,26 +4,26 @@
 #include "kernel/task.h"
 #include "kernel/scheduler.h"
 #include "hal/systick.h"
-#include "kernel/mutex.h"
+#include "kernel/semaphore.h"
 
 uint32_t task_1_stack[TASK_STACK_SIZE];
 uint32_t task_2_stack[TASK_STACK_SIZE];
 uint32_t idle_task_stack[TASK_STACK_SIZE];
 TCB tcb1,tcb2;
 TCB idle_tcb;
-Mutex uart_mutex;
+Semaphore uart_sem;
 uint32_t shared_counter = 0;
 
 void task1(void)
 {
     while(1)
     {
-        mutex_lock(&uart_mutex);
+        sem_wait(&uart_sem);
         shared_counter++;
         uart_puts("Task 1 | counter = ");
         uart_putc('0' + (shared_counter % 10));
         uart_puts("\n");
-        mutex_unlock(&uart_mutex);
+        sem_post(&uart_sem);
         task_sleep(100);
     }
 }
@@ -31,12 +31,12 @@ void task2(void)
 {
     while(1)
     {
-        mutex_lock(&uart_mutex);
+        sem_wait(&uart_sem);
         shared_counter++;
         uart_puts("Task 2 | counter = ");
         uart_putc('0' + (shared_counter % 10));
         uart_puts("\n");
-        mutex_unlock(&uart_mutex);
+        sem_post(&uart_sem);
         task_sleep(50);
     }
 }
@@ -51,6 +51,7 @@ void idle_task(void)
 int main(void)
 {
     uart_init();
+    sem_init(&uart_sem, 1);
 
     scheduler_init();
     task_create(&tcb1, task1, task_1_stack, 0);

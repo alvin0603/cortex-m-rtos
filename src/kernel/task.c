@@ -16,4 +16,5 @@ void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_
     tcb->stack_pointer = sp;
     tcb->sleep_count = 0;
     tcb->priority = priority;
+    tcb->state = READY;
 }

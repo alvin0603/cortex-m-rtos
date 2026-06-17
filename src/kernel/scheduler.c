@@ -33,7 +33,8 @@ static void scheduler_select_next_task(void)
     {
         search_index = (search_index + 1) % task_count; 
         if (task_list[search_index]->sleep_count == 0 && 
-            task_list[search_index]->priority < highest_priority)
+            task_list[search_index]->priority < highest_priority &&
+            task_list[search_index]->state == READY)
         {
             highest_priority = task_list[search_index]->priority;
             next_index = search_index;
