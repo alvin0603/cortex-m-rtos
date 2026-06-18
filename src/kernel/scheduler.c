@@ -1,5 +1,6 @@
 #include "kernel/scheduler.h"
 #include "kernel/task.h"
+#include "kernel/software_timer.h"
 #include <stdint.h>
 #include <stddef.h>
 #define MAX_TASKS 5
@@ -11,6 +12,13 @@ TCB *next_task = NULL;
 TCB *task_list[MAX_TASKS];
 uint32_t task_count = 0;   
 uint32_t current_task_index = 0;
+
+volatile uint32_t system_ticks = 0;
+
+uint32_t scheduler_get_ticks(void)
+{
+    return system_ticks;
+}
 
 /* Scheduler API */
 void scheduler_init(void)
@@ -80,13 +88,14 @@ void scheduler_start(void)
 /* SysTick */
 void SysTick_Handler(void)
 {
+    system_ticks++;
     // Decrement sleep counters for all sleeping tasks
     for (uint32_t i = 0; i < task_count; i++)
     {
         if (task_list[i]->sleep_count > 0)
             task_list[i]->sleep_count--;
     }
-    
+    timer_system_tick();
     scheduler_select_next_task();
 }
 

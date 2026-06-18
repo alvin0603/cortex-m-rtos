@@ -11,5 +11,6 @@ void scheduler_add_task(TCB *tcb);
 void task_sleep(uint32_t ticks);
 void critical_enter(void);
 void critical_exit(void);
+uint32_t scheduler_get_ticks(void);
 
 #endif
