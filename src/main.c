@@ -6,6 +6,7 @@
 #include "kernel/scheduler.h"
 #include "kernel/software_timer.h"
 #include "kernel/task.h"
+#include "kernel/memory_pool.h"
 
 
 uint32_t task_1_stack[TASK_STACK_SIZE];
@@ -17,6 +18,17 @@ TCB idle_tcb;
 #define MQ_CAPACITY 5
 uint32_t mq_buffer[MQ_CAPACITY];
 MessageQueue my_mq;
+
+#define BLOCK_SIZE 32
+#define TOTAL_BLOCKS 8
+uint32_t my_pool_buffer[(BLOCK_SIZE * TOTAL_BLOCKS) / 4];
+MemoryPool my_pool;
+
+typedef struct 
+{
+    uint32_t id;
+    uint32_t data;
+} SensorData;
 
 void uart_print_num(uint32_t num) 
 {
@@ -59,16 +71,25 @@ void oneshot_callback(void)
 
 void task1(void) 
 {
-  uint32_t send_val = 0;
+  uint32_t count = 0;
   while (1) 
   {
-    print_timestamp();
-    msg_queue_send(&my_mq, send_val);
-    uart_puts("Producer sent: ");
-    uart_print_num(send_val);
-    uart_puts("\n");
-    send_val++;
-    task_sleep(10);
+    SensorData *sensor_ptr = (SensorData *)pool_alloc(&my_pool);
+    if (sensor_ptr != NULL) 
+    {
+      sensor_ptr->id = 1;
+      sensor_ptr->data = count;
+      print_timestamp();
+      uart_puts("Producer allocated ptr and sent\n");
+      msg_queue_send(&my_mq, (uint32_t)sensor_ptr);
+      count++;
+    } 
+    else 
+    {
+      print_timestamp();
+      uart_puts("Producer OOM!\n");
+    }
+    task_sleep(20);
   }
 }
 void task2(void) 
@@ -76,12 +97,15 @@ void task2(void)
   uint32_t recv_val;
   while (1) 
   {
-    print_timestamp();
     msg_queue_receive(&my_mq, &recv_val);
-    uart_puts("  Consumer got: ");
-    uart_print_num(recv_val);
+    SensorData *sensor_ptr = (SensorData *)recv_val;
+    print_timestamp();
+    uart_puts("  Consumer read data: ");
+    uart_print_num(sensor_ptr->data);
     uart_puts("\n");
-    task_sleep(100);
+    pool_free(&my_pool, sensor_ptr);
+    uart_puts("  Consumer freed ptr\n");
+    task_sleep(50);
   }
 }
 void idle_task(void) 
@@ -99,6 +123,8 @@ int main(void) {
   timer_start(&periodic_timer);
   timer_create(&oneshot_timer, 200, 0, oneshot_callback);
   timer_start(&oneshot_timer);
+
+  pool_init(&my_pool, my_pool_buffer, BLOCK_SIZE, TOTAL_BLOCKS);
 
   scheduler_init();
   task_create(&tcb1, task1, task_1_stack, 0);
