@@ -65,7 +65,7 @@ void task1(void)
     print_timestamp();
     msg_queue_send(&my_mq, send_val);
     uart_puts("Producer sent: ");
-    uart_putc('0' + (send_val % 10));
+    uart_print_num(send_val);
     uart_puts("\n");
     send_val++;
     task_sleep(10);
@@ -79,7 +79,7 @@ void task2(void)
     print_timestamp();
     msg_queue_receive(&my_mq, &recv_val);
     uart_puts("  Consumer got: ");
-    uart_putc('0' + (recv_val % 10));
+    uart_print_num(recv_val);
     uart_puts("\n");
     task_sleep(100);
   }
@@ -88,8 +88,6 @@ void idle_task(void)
 {
   while (1) 
   {
-    print_timestamp();
-    uart_puts("Idle...\n");
     __asm volatile("wfi"); // Wait for interrupt until next SysTick
   }
 }

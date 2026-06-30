@@ -6,6 +6,7 @@
 #define MAX_TASKS 5
 #define ICSR  (*((volatile uint32_t *)0xE000ED04))
 #define PENDSVSET 0x10000000
+#define SHPR3 (*((volatile uint32_t *)0xE000ED20))
 
 TCB *current_task = NULL;
 TCB *next_task = NULL;
@@ -25,6 +26,7 @@ void scheduler_init(void)
 {
     task_count = 0;
     current_task_index = 0;
+    SHPR3 |= (0xFF << 16); // context switch set to the lowest priority ([31:24] -> Systick's priority [23:16] -> PendSV's priority)
 }
 void scheduler_add_task(TCB *tcb)
 {
