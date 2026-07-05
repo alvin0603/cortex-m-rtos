@@ -1,6 +1,10 @@
 #include "kernel/task.h"    
+#include <stdint.h>
 void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_t priority)
 {
+    for(uint32_t i = 0; i < TASK_STACK_SIZE; i++)
+        stack[i] = 0xDEADBEEF; // unused
+    tcb->stack_base = stack;
     // ARM stack use Full Descending
     uint32_t *sp = stack + TASK_STACK_SIZE;
     *(--sp) = 0x01000000; // xPSR thumb bit = 1
@@ -16,5 +20,19 @@ void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_
     tcb->stack_pointer = sp;
     tcb->sleep_count = 0;
     tcb->priority = priority;
+    tcb->run_ticks = 0;
     tcb->state = READY;
+}
+
+uint32_t task_get_stack_used(TCB *tcb)
+{
+    uint32_t unused = 0;
+    for(uint32_t i = 0; i < TASK_STACK_SIZE; i++)
+    {
+        if(tcb->stack_base[i] == 0xDEADBEEF)
+            unused++;
+        else
+            break;
+    }
+    return TASK_STACK_SIZE - unused;
 }

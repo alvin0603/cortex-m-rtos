@@ -14,11 +14,14 @@ enum taskState
 typedef struct
 {
     uint32_t *stack_pointer;
+    uint32_t *stack_base;
     uint32_t sleep_count;
     uint32_t priority;
+    uint32_t run_ticks;
     enum taskState state;
 } TCB; 
 
 void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_t priority);
+uint32_t task_get_stack_used(TCB *tcb);
 
 #endif

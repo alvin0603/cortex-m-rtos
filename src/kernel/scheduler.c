@@ -15,11 +15,16 @@ TCB *task_list[MAX_TASKS];
 uint32_t task_count = 0;   
 uint32_t current_task_index = 0;
 
+uint32_t context_switch_count = 0;
 volatile uint32_t system_ticks = 0;
 
 uint32_t scheduler_get_ticks(void)
 {
     return system_ticks;
+}
+uint32_t scheduler_get_context_switches(void)
+{
+    return context_switch_count;
 }
 
 /* Scheduler API */
@@ -54,6 +59,8 @@ static void scheduler_select_next_task(void)
     }
     if (found) 
     {
+        if(task_list[next_index] != current_task)
+            context_switch_count++;
         next_task = task_list[next_index];
         current_task_index = next_index;
         ICSR = PENDSVSET;
@@ -90,7 +97,7 @@ void scheduler_start(void)
 
 void scheduler_print_tasks(void)
 {
-    uart_puts("ID\tPRIO\tSTATE\tSLEEP\n");
+    uart_puts("ID\tPRIO\tSTATE\tSLEEP\tCPU%\n");
     uart_puts("---------------------------------\n");
     for (uint32_t i = 0; i < task_count; i++)
     {
@@ -111,6 +118,26 @@ void scheduler_print_tasks(void)
         }
         uart_puts("\t");
         uart_print_num(task_list[i]->sleep_count); 
+        uart_puts("\t");
+        uint32_t cpu_percent = 0;
+        if (system_ticks > 0) 
+            cpu_percent = (task_list[i]->run_ticks * 100) / system_ticks;
+        uart_print_num(cpu_percent);
+        uart_puts(" %\n");
+    }
+}
+
+void scheduler_print_stacks(void)
+{
+    uart_puts("Task ID\tUsed\tTotal\n");
+    uart_puts("------------------------\n");
+    for (uint32_t i = 0; i < task_count; i++)
+    {
+        uart_print_num(i);
+        uart_puts("\t");
+        uart_print_num(task_get_stack_used(task_list[i]));
+        uart_puts("\t");
+        uart_print_num(TASK_STACK_SIZE);
         uart_puts("\n");
     }
 }
@@ -119,6 +146,7 @@ void scheduler_print_tasks(void)
 void SysTick_Handler(void)
 {
     system_ticks++;
+    current_task->run_ticks++;
     // Decrement sleep counters for all sleeping tasks
     for (uint32_t i = 0; i < task_count; i++)
     {

@@ -121,7 +121,7 @@ void shell_task(void)
       
       if (line_buffer[0] == 'h' && line_buffer[1] == 'e' && line_buffer[2] == 'l' && line_buffer[3] == 'p' && line_buffer[4] == '\0')
       {
-        uart_puts("Available commands: help, ps, clear, uptime, free\n");
+        uart_puts("Available commands: help, ps, clear, uptime, free, stats, stack\n");
       }
       else if (line_buffer[0] == 'p' && line_buffer[1] == 's' && line_buffer[2] == '\0')
       {
@@ -142,6 +142,16 @@ void shell_task(void)
         uart_puts("Free blocks: ");
         uart_print_num(pool_get_free_blocks(&my_pool));
         uart_puts("\n");
+      }
+      else if(line_buffer[0] == 's' && line_buffer[1] == 't' && line_buffer[2] == 'a' && line_buffer[3] == 't' && line_buffer[4] == 's' && line_buffer[5] == '\0')
+      {
+        uart_puts("Context Switches:");
+        uart_print_num(scheduler_get_context_switches());
+        uart_puts("\n");
+      }
+      else if(line_buffer[0] == 's' && line_buffer[1] == 't' && line_buffer[2] == 'a' && line_buffer[3] == 'c' && line_buffer[4] == 'k' && line_buffer[5] == '\0')
+      {
+        scheduler_print_stacks();
       }
       else if (idx > 0)
       {
