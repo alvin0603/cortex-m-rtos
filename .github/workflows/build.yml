@@ -1,0 +1,40 @@
+name: CI Build and Smoke Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install Toolchain and QEMU
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-arm-none-eabi qemu-system-arm
+
+    - name: Build RTOS
+      run: make
+
+    - name: Smoke Test (Boot & UART Check)
+      run: |
+        # Run QEMU for 2 seconds and auto-terminate
+        # We expect the OS to boot and show the 'rtos>' prompt within this time
+        timeout 2s qemu-system-arm -machine lm3s6965evb -nographic -kernel build/mini-rtos.elf > qemu_output.log || true
+        
+        # Print QEMU output for debugging
+        cat qemu_output.log
+        
+        # Check if the "rtos>" prompt exists in the output
+        if grep -q "rtos>" qemu_output.log; then
+          echo "Smoke test passed: 'rtos>' prompt found!"
+        else
+          echo "Smoke test failed: 'rtos>' prompt not found."
+          exit 1
+        fi
