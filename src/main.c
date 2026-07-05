@@ -7,13 +7,15 @@
 #include "kernel/software_timer.h"
 #include "kernel/task.h"
 #include "kernel/memory_pool.h"
+#include "kernel/mutex.h"
 
-
-uint32_t task_1_stack[TASK_STACK_SIZE];
-uint32_t task_2_stack[TASK_STACK_SIZE];
+uint32_t high_stack[TASK_STACK_SIZE];
+uint32_t medium_stack[TASK_STACK_SIZE];
+uint32_t low_stack[TASK_STACK_SIZE];
 uint32_t idle_task_stack[TASK_STACK_SIZE];
-TCB tcb1, tcb2;
+TCB high_tcb, medium_tcb, low_tcb;
 TCB idle_tcb;
+Mutex demo_mutex;
 
 #define MQ_CAPACITY 5
 uint32_t mq_buffer[MQ_CAPACITY];
@@ -56,44 +58,52 @@ void oneshot_callback(void)
     // uart_puts("One-shot timer fired\n"); 
 }
 
-void task1(void) 
+void task_low(void) 
 {
-  uint32_t count = 0;
-  while (1) 
-  {
-    SensorData *sensor_ptr = (SensorData *)pool_alloc(&my_pool);
-    if (sensor_ptr != NULL) 
+    uart_puts("[Low] Started. Acquiring Mutex...\n");
+    mutex_lock(&demo_mutex);
+    uart_puts("[Low] Mutex Acquired! Doing slow work...\n");
+    
+    // Busy-loop
+    for(volatile uint32_t i=0; i<3000000; i++); 
+    
+    uart_puts("[Low] Work done. Releasing Mutex...\n");
+    mutex_unlock(&demo_mutex);
+    uart_puts("[Low] Finished.\n");
+    
+    while(1)
     {
-      sensor_ptr->id = 1;
-      sensor_ptr->data = count;
-      // print_timestamp();
-      // uart_puts("Producer allocated ptr and sent\n");
-      msg_queue_send(&my_mq, (uint32_t)sensor_ptr);
-      count++;
-    } 
-    else 
-    {
-      // print_timestamp();
-      // uart_puts("Producer OOM!\n");
+        uart_puts("[Low] Working...\n");
+        task_sleep(1000);
     }
-    task_sleep(20);
-  }
 }
-void task2(void) 
+
+void task_high(void) 
 {
-  uint32_t recv_val;
-  while (1) 
-  {
-    msg_queue_receive(&my_mq, &recv_val);
-    SensorData *sensor_ptr = (SensorData *)recv_val;
-    // print_timestamp();
-    // uart_puts("  Consumer read data: ");
-    // uart_print_num(sensor_ptr->data);
-    // uart_puts("\n");
-    pool_free(&my_pool, sensor_ptr);
-    // uart_puts("  Consumer freed ptr\n");
-    task_sleep(50);
-  }
+    task_sleep(10);
+    uart_puts("[High] Woke up! Needing Mutex...\n");
+    mutex_lock(&demo_mutex);
+    uart_puts("[High] Mutex Acquired! Doing critical work...\n");
+    
+    for(volatile uint32_t i=0; i<1000000; i++);
+    
+    mutex_unlock(&demo_mutex);
+    uart_puts("[High] Finished.\n");
+    
+    while(1) 
+      task_sleep(1000);
+}
+
+void task_medium(void) 
+{
+    task_sleep(20);
+    uart_puts("[Medium] Woke up! I don't need Mutex, but I need CPU!\n");
+    
+    for(volatile uint32_t i=0; i<8000000; i++);
+    
+    uart_puts("[Medium] Finished.\n");
+    
+    while(1) task_sleep(1000);
 }
 void idle_task(void) 
 {
@@ -193,13 +203,16 @@ int main(void)
 
   pool_init(&my_pool, my_pool_buffer, BLOCK_SIZE, TOTAL_BLOCKS);
 
+  mutex_init(&demo_mutex);
   scheduler_init();
-  task_create(&tcb1, task1, task_1_stack, 0);
-  task_create(&tcb2, task2, task_2_stack, 1);
-  task_create(&shell_tcb, shell_task, shell_task_stack, 2);
+  task_create(&high_tcb, task_high, high_stack, 10);
+  task_create(&medium_tcb, task_medium, medium_stack, 20);
+  task_create(&low_tcb, task_low, low_stack, 30);
+  task_create(&shell_tcb, shell_task, shell_task_stack, 40);
   task_create(&idle_tcb, idle_task, idle_task_stack, 255);
-  scheduler_add_task(&tcb1);
-  scheduler_add_task(&tcb2);
+  scheduler_add_task(&high_tcb);
+  scheduler_add_task(&medium_tcb);
+  scheduler_add_task(&low_tcb);
   scheduler_add_task(&shell_tcb);
   scheduler_add_task(&idle_tcb);
   systick_init(120000);
