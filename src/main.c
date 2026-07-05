@@ -121,7 +121,7 @@ void shell_task(void)
       
       if (line_buffer[0] == 'h' && line_buffer[1] == 'e' && line_buffer[2] == 'l' && line_buffer[3] == 'p' && line_buffer[4] == '\0')
       {
-        uart_puts("Available commands: help, ps, clear\n");
+        uart_puts("Available commands: help, ps, clear, uptime, free\n");
       }
       else if (line_buffer[0] == 'p' && line_buffer[1] == 's' && line_buffer[2] == '\0')
       {
@@ -130,6 +130,18 @@ void shell_task(void)
       else if (line_buffer[0] == 'c' && line_buffer[1] == 'l' && line_buffer[2] == 'e' && line_buffer[3] == 'a' && line_buffer[4] == 'r' && line_buffer[5] == '\0')
       {
         uart_puts("\033[2J\033[H");
+      }
+      else if(line_buffer[0] == 'u' && line_buffer[1] == 'p' && line_buffer[2] == 't' && line_buffer[3] == 'i' && line_buffer[4] == 'm' && line_buffer[5] == 'e' && line_buffer[6] == '\0')
+      {
+        uart_puts("Current time: ");
+        uart_print_num(scheduler_get_ticks());
+        uart_puts(" ticks\n");
+      }
+      else if(line_buffer[0] == 'f' && line_buffer[1] == 'r' && line_buffer[2] == 'e' && line_buffer[3] == 'e' && line_buffer[4] == '\0')
+      {
+        uart_puts("Free blocks: ");
+        uart_print_num(pool_get_free_blocks(&my_pool));
+        uart_puts("\n");
       }
       else if (idx > 0)
       {

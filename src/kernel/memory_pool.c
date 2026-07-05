@@ -8,6 +8,7 @@ void pool_init(MemoryPool *pool, void *buffer, uint32_t block_size, uint32_t tot
     pool->block_size = block_size;
     pool->total_blocks = total_blocks;
     pool->free_list_head = buffer;
+    pool->free_blocks = total_blocks;
 
     uint8_t* current_block = (uint8_t*)buffer;
     for(uint32_t i = 0; i < total_blocks - 1; i++)
@@ -29,6 +30,7 @@ void *pool_alloc(MemoryPool *pool)
     }
     void *allocated_block = pool->free_list_head;
     pool->free_list_head = *((void **)allocated_block);
+    pool->free_blocks--;
     critical_exit();
     return allocated_block;
 }
@@ -43,5 +45,11 @@ void pool_free(MemoryPool *pool, void *block)
     }    
     *((void **)block) = pool->free_list_head;
     pool->free_list_head = block;
+    pool->free_blocks++;
     critical_exit();
+}
+
+uint32_t pool_get_free_blocks(MemoryPool *pool)
+{
+    return pool->free_blocks;
 }
