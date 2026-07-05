@@ -16,6 +16,7 @@ typedef struct
 
 void sem_init(Semaphore *sem, uint32_t init_count);
 void sem_wait(Semaphore *sem);
+uint8_t sem_try_wait(Semaphore *sem); // for ISR
 void sem_post(Semaphore *sem);
 
 #endif

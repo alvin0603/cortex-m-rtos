@@ -22,6 +22,19 @@ void sem_wait(Semaphore *sem)
     scheduler_yield();
 }
 
+uint8_t sem_try_wait(Semaphore *sem)
+{
+    critical_enter();
+    if(sem->count > 0)
+    {
+        sem->count--;
+        critical_exit();
+        return 1;
+    }
+    critical_exit();
+    return 0;
+}
+
 void sem_post(Semaphore *sem)
 {
     critical_enter();

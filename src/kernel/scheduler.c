@@ -1,6 +1,7 @@
 #include "kernel/scheduler.h"
 #include "kernel/task.h"
 #include "kernel/software_timer.h"
+#include "hal/uart.h"
 #include <stdint.h>
 #include <stddef.h>
 #define MAX_TASKS 5
@@ -85,6 +86,33 @@ void scheduler_start(void)
         : "r" (&current_task->stack_pointer) 
         : "r0", "memory"
     );
+}
+
+void scheduler_print_tasks(void)
+{
+    uart_puts("ID\tPRIO\tSTATE\tSLEEP\n");
+    uart_puts("---------------------------------\n");
+    for (uint32_t i = 0; i < task_count; i++)
+    {
+        uart_print_num(i); 
+        uart_puts("\t");
+        uart_print_num(task_list[i]->priority); 
+        uart_puts("\t"); 
+        if (task_list[i] == current_task) 
+            uart_puts("RUNNING");
+        else 
+        {
+            switch (task_list[i]->state) 
+            {
+                case READY:   uart_puts("READY"); break;
+                case BLOCKED: uart_puts("BLOCK"); break;
+                default:      uart_puts("UNKNOWN"); break;
+            }
+        }
+        uart_puts("\t");
+        uart_print_num(task_list[i]->sleep_count); 
+        uart_puts("\n");
+    }
 }
 
 /* SysTick */

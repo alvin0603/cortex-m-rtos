@@ -23,6 +23,12 @@ vector_table:
     .word 0                     @ 0x34: Reserved
     .word PendSV_Handler        @ 0x38: PendSV (context switching)
     .word SysTick_Handler       @ 0x3C: SysTick (system timer)
+    .word Default_Handler       @ 0x40: IRQ0
+    .word Default_Handler       @ 0x44: IRQ1
+    .word Default_Handler       @ 0x48: IRQ2
+    .word Default_Handler       @ 0x4C: IRQ3
+    .word Default_Handler       @ 0x50: IRQ4
+    .word UART0_Handler         @ 0x54: IRQ5
 
     .section .text
     .align 2

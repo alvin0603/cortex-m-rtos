@@ -18,6 +18,11 @@ TCB idle_tcb;
 #define MQ_CAPACITY 5
 uint32_t mq_buffer[MQ_CAPACITY];
 MessageQueue my_mq;
+MessageQueue shell_rx_queue;
+uint32_t shell_rx_buffer[64];
+
+uint32_t shell_task_stack[TASK_STACK_SIZE];
+TCB shell_tcb;
 
 #define BLOCK_SIZE 32
 #define TOTAL_BLOCKS 8
@@ -30,24 +35,6 @@ typedef struct
     uint32_t data;
 } SensorData;
 
-void uart_print_num(uint32_t num) 
-{
-    if (num == 0) 
-    {
-        uart_putc('0');
-        return;
-    }
-    char buf[10];
-    int i = 0;
-    while (num > 0) 
-    {
-        buf[i++] = (num % 10) + '0';
-        num /= 10;
-    }
-    while (i > 0)
-        uart_putc(buf[--i]);
-}
-
 void print_timestamp(void)
 {
     uart_print_num(scheduler_get_ticks());
@@ -59,14 +46,14 @@ softwareTimer oneshot_timer;
 
 void periodic_callback(void) 
 { 
-    print_timestamp();
-    uart_puts("Periodic timer fired\n"); 
+    // print_timestamp();
+    // uart_puts("Periodic timer fired\n"); 
 }
 
 void oneshot_callback(void) 
 { 
-    print_timestamp();
-    uart_puts("One-shot timer fired\n"); 
+    // print_timestamp();
+    // uart_puts("One-shot timer fired\n"); 
 }
 
 void task1(void) 
@@ -79,15 +66,15 @@ void task1(void)
     {
       sensor_ptr->id = 1;
       sensor_ptr->data = count;
-      print_timestamp();
-      uart_puts("Producer allocated ptr and sent\n");
+      // print_timestamp();
+      // uart_puts("Producer allocated ptr and sent\n");
       msg_queue_send(&my_mq, (uint32_t)sensor_ptr);
       count++;
     } 
     else 
     {
-      print_timestamp();
-      uart_puts("Producer OOM!\n");
+      // print_timestamp();
+      // uart_puts("Producer OOM!\n");
     }
     task_sleep(20);
   }
@@ -99,12 +86,12 @@ void task2(void)
   {
     msg_queue_receive(&my_mq, &recv_val);
     SensorData *sensor_ptr = (SensorData *)recv_val;
-    print_timestamp();
-    uart_puts("  Consumer read data: ");
-    uart_print_num(sensor_ptr->data);
-    uart_puts("\n");
+    // print_timestamp();
+    // uart_puts("  Consumer read data: ");
+    // uart_print_num(sensor_ptr->data);
+    // uart_puts("\n");
     pool_free(&my_pool, sensor_ptr);
-    uart_puts("  Consumer freed ptr\n");
+    // uart_puts("  Consumer freed ptr\n");
     task_sleep(50);
   }
 }
@@ -115,9 +102,67 @@ void idle_task(void)
     __asm volatile("wfi"); // Wait for interrupt until next SysTick
   }
 }
-int main(void) {
+void shell_task(void)
+{
+  char line_buffer[64];
+  uint32_t idx = 0;
+  uint32_t recv_val;
+  
+  uart_puts("\nrtos> ");
+  while(1)
+  {
+    msg_queue_receive(&shell_rx_queue, &recv_val);
+    char c = (char)recv_val;
+    
+    if(c == '\r' || c == '\n')
+    {
+      uart_puts("\n");
+      line_buffer[idx] = '\0';
+      
+      if (line_buffer[0] == 'h' && line_buffer[1] == 'e' && line_buffer[2] == 'l' && line_buffer[3] == 'p' && line_buffer[4] == '\0')
+      {
+        uart_puts("Available commands: help, ps, clear\n");
+      }
+      else if (line_buffer[0] == 'p' && line_buffer[1] == 's' && line_buffer[2] == '\0')
+      {
+        scheduler_print_tasks();
+      }
+      else if (line_buffer[0] == 'c' && line_buffer[1] == 'l' && line_buffer[2] == 'e' && line_buffer[3] == 'a' && line_buffer[4] == 'r' && line_buffer[5] == '\0')
+      {
+        uart_puts("\033[2J\033[H");
+      }
+      else if (idx > 0)
+      {
+        uart_puts("Unknown command\n");
+      }
+      
+      idx = 0;
+      uart_puts("rtos> ");
+    }
+    else if (c == '\b' || c == 0x7F)
+    {
+      if (idx > 0)
+      {
+        idx--;
+        uart_puts("\b \b");
+      }
+    }
+    else
+    {
+      if (idx < 63)
+      {
+        line_buffer[idx] = c;
+        idx++;
+        uart_putc(c);
+      }
+    }
+  }
+}
+int main(void) 
+{
   uart_init();
   msg_queue_init(&my_mq, mq_buffer, MQ_CAPACITY);
+  msg_queue_init(&shell_rx_queue, shell_rx_buffer, 64);
 
   timer_create(&periodic_timer, 50, 1, periodic_callback);
   timer_start(&periodic_timer);
@@ -129,9 +174,11 @@ int main(void) {
   scheduler_init();
   task_create(&tcb1, task1, task_1_stack, 0);
   task_create(&tcb2, task2, task_2_stack, 1);
+  task_create(&shell_tcb, shell_task, shell_task_stack, 2);
   task_create(&idle_tcb, idle_task, idle_task_stack, 255);
   scheduler_add_task(&tcb1);
   scheduler_add_task(&tcb2);
+  scheduler_add_task(&shell_tcb);
   scheduler_add_task(&idle_tcb);
   systick_init(120000);
   scheduler_start();

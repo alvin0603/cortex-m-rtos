@@ -1,6 +1,7 @@
 #include "kernel/message_queue.h"
 #include "kernel/semaphore.h"
 #include "kernel/scheduler.h"
+#include <stdint.h>
 
 void msg_queue_init(MessageQueue *mq, uint32_t *buffer, uint32_t capacity)
 {
@@ -19,6 +20,17 @@ void msg_queue_send(MessageQueue *mq, uint32_t msg)
     mq->head = (mq->head + 1) % mq->capacity;
     critical_exit();
     sem_post(&mq->filled_slots);
+}
+uint8_t msg_queue_send_isr(MessageQueue *mq, uint32_t msg)
+{
+    if(sem_try_wait(&mq->empty_slots) == 0)
+        return 0; // discard message to prevent ISR from deadlock
+    critical_enter();
+    mq->buffer[mq->head] = msg;
+    mq->head = (mq->head + 1) % mq->capacity;
+    critical_exit();
+    sem_post(&mq->filled_slots);
+    return 1;
 }
 void msg_queue_receive(MessageQueue *mq, uint32_t *msg)
 {

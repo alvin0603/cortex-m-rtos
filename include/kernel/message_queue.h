@@ -3,6 +3,7 @@
 
 #include "kernel/task.h"
 #include "kernel/semaphore.h"
+#include <stdint.h>
 
 
 typedef struct
@@ -17,6 +18,7 @@ typedef struct
 
 void msg_queue_init(MessageQueue *mq, uint32_t *buffer, uint32_t capacity);
 void msg_queue_send(MessageQueue *mq, uint32_t msg);
+uint8_t msg_queue_send_isr(MessageQueue *mq, uint32_t msg);
 void msg_queue_receive(MessageQueue *mq, uint32_t *msg);
 
 #endif
