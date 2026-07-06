@@ -4,7 +4,7 @@
 #include "hal/uart.h"
 #include <stdint.h>
 #include <stddef.h>
-#define MAX_TASKS 5
+#define MAX_TASKS 10
 #define ICSR  (*((volatile uint32_t *)0xE000ED04))
 #define PENDSVSET 0x10000000
 #define SHPR3 (*((volatile uint32_t *)0xE000ED20))
