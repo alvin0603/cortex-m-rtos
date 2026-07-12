@@ -41,6 +41,7 @@ void sem_post(Semaphore *sem)
     if(sem->waiting_count > 0)
     {
         sem->wait_queue[0]->state = READY;
+        add_to_ready_list(sem->wait_queue[0]);
         for(uint32_t i = 0; i < sem->waiting_count - 1; i++)
             sem->wait_queue[i] = sem->wait_queue[i+1];
         sem->waiting_count--;

@@ -17,12 +17,12 @@ OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(C_SRCS)) \
        $(patsubst %.s, $(BUILD_DIR)/%.o, $(ASM_SRCS))
 
 ARCH_FLAGS = -mcpu=cortex-m3 -mthumb
-CFLAGS     = $(ARCH_FLAGS) -nostdlib -ffreestanding -Wall -Wextra -O0 -g3 -I$(INC_DIR)
+CFLAGS     = $(ARCH_FLAGS) -nostdlib -ffreestanding -Wall -Wextra -O2 -g3 -I$(INC_DIR)
 ASFLAGS    = $(ARCH_FLAGS) -g3
 LDFLAGS    = $(ARCH_FLAGS) -nostdlib -T linker.ld -Wl,-Map=$(TARGET).map
 
 QEMU       = qemu-system-arm
-QEMU_FLAGS = -machine lm3s6965evb -nographic
+QEMU_FLAGS = -machine lm3s6965evb -nographic -icount shift=0,align=off
 
 .PHONY: all clean run debug
 

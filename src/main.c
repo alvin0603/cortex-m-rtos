@@ -235,10 +235,10 @@ int main(void)
   task_create(&tcb1, task1, task_1_stack, 5);
   task_create(&tcb2, task2, task_2_stack, 5);
   task_create(&high_tcb, task_high, high_stack, 10);
-  task_create(&medium_tcb, task_medium, medium_stack, 20);
-  task_create(&low_tcb, task_low, low_stack, 30);
-  task_create(&shell_tcb, shell_task, shell_task_stack, 40);
-  task_create(&idle_tcb, idle_task, idle_task_stack, 255);
+  task_create(&medium_tcb, task_medium, medium_stack, 15);
+  task_create(&low_tcb, task_low, low_stack, 20);
+  task_create(&shell_tcb, shell_task, shell_task_stack, 25);
+  task_create(&idle_tcb, idle_task, idle_task_stack, 31);
   scheduler_add_task(&tcb1);
   scheduler_add_task(&tcb2);
   scheduler_add_task(&high_tcb);

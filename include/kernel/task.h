@@ -11,7 +11,7 @@ enum taskState
 };
 
 // task control block
-typedef struct
+typedef struct TCB
 {
     uint32_t *stack_pointer;
     uint32_t *stack_base;
@@ -20,6 +20,7 @@ typedef struct
     uint32_t original_priority;
     uint32_t run_ticks;
     enum taskState state;
+    struct TCB *next;
 } TCB; 
 
 void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_t priority);

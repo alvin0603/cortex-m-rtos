@@ -25,7 +25,7 @@ void mutex_lock(Mutex *mtx)
         {
             // PIP
             if(mtx->owner->priority > current_task->priority)
-                mtx->owner->priority = current_task->priority;
+                scheduler_set_priority(mtx->owner, current_task->priority);
 
             // add to waiting queue
             if(mtx->waiting_count < MAX_WAITING_TASKS)
@@ -48,7 +48,7 @@ void mutex_unlock(Mutex *mtx)
     critical_enter();
     if(mtx->owner == current_task)
     {
-        current_task->priority = current_task->original_priority; // PIP restore
+        scheduler_set_priority(current_task, current_task->original_priority); // PIP restore
         if(mtx->waiting_count > 0)
         {
             uint32_t highest_prio_idx = 0;
@@ -69,6 +69,7 @@ void mutex_unlock(Mutex *mtx)
             mtx->waiting_count--;
             mtx->owner = next_owner;
             next_owner->state = READY;
+            add_to_ready_list(next_owner);
         }
         else
         {

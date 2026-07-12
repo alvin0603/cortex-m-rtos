@@ -1,5 +1,6 @@
 #include "kernel/task.h"    
 #include <stdint.h>
+#include <stddef.h>
 void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_t priority)
 {
     for(uint32_t i = 0; i < TASK_STACK_SIZE; i++)
@@ -23,6 +24,7 @@ void task_create(TCB *tcb, void (*task_function)(void), uint32_t *stack, uint32_
     tcb->original_priority = priority;
     tcb->run_ticks = 0;
     tcb->state = READY;
+    tcb->next = NULL;
 }
 
 uint32_t task_get_stack_used(TCB *tcb)
